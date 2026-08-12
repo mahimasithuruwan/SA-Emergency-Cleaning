@@ -1,0 +1,9 @@
+{
+  "appId": "com.sacommercialcleaning.membership",
+  "appName": "SA Emergency Cleaning",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

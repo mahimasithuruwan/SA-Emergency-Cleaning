@@ -1,0 +1,126 @@
+// Prisma Schema - Local SQLite for Development (Translates 100% to Azure PostgreSQL)
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Organization {
+  id                 String              @id @default(uuid())
+  businessName       String
+  abn                String
+  primaryContactName String
+  phoneNumber        String
+  email              String              @unique
+  password           String              @default("Password123!")
+  membershipPlan     String              @default("business")
+  paymentMethod      String              @default("PayTo Bank Direct")
+  paymentType        String              @default("DIRECT_DEBIT")
+  subscriptionStatus String              @default("ACTIVE")
+  consecutiveMonths  Int                 @default(8)
+  pointsBalance      Int                 @default(1592)
+  calloutsUsed       Int                 @default(1)
+  locations          Location[]
+  emergencyRequests  EmergencyRequest[]
+  redemptionRequests RedemptionRequest[]
+  invoices           Invoice[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+}
+
+model Location {
+  id                   String              @id @default(uuid())
+  organizationId       String
+  organization         Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name                 String
+  address              String
+  contactName          String
+  contactPhone         String
+  accessInstructions   String?
+  securityNotes        String?
+  emergencyRequests    EmergencyRequest[]
+  redemptionRequests   RedemptionRequest[]
+  createdAt            DateTime            @default(now())
+}
+
+model Technician {
+  id          String   @id @default(uuid())
+  name        String
+  phone       String
+  status      String   @default("AVAILABLE") // AVAILABLE, ON_SITE, OFF_DUTY
+  rating      Float    @default(4.9)
+  activeJobId String?
+  createdAt   DateTime @default(now())
+}
+
+model EmergencyRequest {
+  id                 String   @id @default(uuid())
+  jobNumber          String   @unique // e.g. SACC-2026-0812
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id])
+  locationId         String
+  location           Location @relation(fields: [locationId], references: [id])
+  customerName       String
+  locationName       String
+  address            String
+  category           String
+  description        String
+  affectedArea       Float?
+  incidentTime       DateTime @default(now())
+  isOngoing          Boolean  @default(false)
+  isSafeToAccess     Boolean  @default(true)
+  onsiteContact      String
+  onsitePhone        String
+  accessInstructions String?
+  accessRestrictions String?
+  parkingInstructions String?
+  status             String   @default("SUBMITTED") // SUBMITTED, UNDER_REVIEW, MORE_INFO_REQUIRED, ACCEPTED, TECHNICIAN_ASSIGNED, TRAVELLING, ARRIVED, IN_PROGRESS, COMPLETED, REPORT_ISSUED, CLOSED
+  submittedAt        DateTime @default(now())
+  targetAttendanceAt DateTime?
+  technicianName     String?
+  photosJson         String   @default("[]") // JSON string of photo URLs
+  videosJson         String   @default("[]") // JSON string of video URLs
+  timerMinutes       Int      @default(0)
+  timerActive        Boolean  @default(false)
+  extensionRequested Boolean  @default(false)
+  extensionApproved  Boolean  @default(false)
+  additionalCharges  Float    @default(0)
+  createdAt          DateTime @default(now())
+}
+
+model RedemptionRequest {
+  id               String       @id @default(uuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  locationId       String
+  location         Location     @relation(fields: [locationId], references: [id])
+  serviceCode      String
+  serviceName      String
+  quantity         Float
+  calculatedPoints Int
+  status           String       @default("PENDING_APPROVAL") // PENDING_APPROVAL, APPROVED, REJECTED, SCHEDULED
+  createdAt        DateTime     @default(now())
+}
+
+model SystemDynamicConfig {
+  configKey   String   @id
+  configValue String   // JSON string storing dynamic rules, plans, rates, disclaimers
+  updatedAt   DateTime @updatedAt
+}
+
+model Invoice {
+  id             String       @id @default(uuid())
+  invoiceNumber  String       @unique // e.g. INV-2026-001
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  description    String
+  amount         Float
+  status         String       @default("PAID") // PAID, PENDING, OVERDUE
+  paymentMethod  String       @default("PayTo Bank Direct")
+  dueDate        DateTime     @default(now())
+  paidAt         DateTime?    @default(now())
+  createdAt      DateTime     @default(now())
+}
